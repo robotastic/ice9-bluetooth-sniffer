@@ -38,6 +38,8 @@ typedef struct __attribute__((packed)) _pcap_le_header_t {
 } pcap_le_header_t;
 
 #define LE_DEWHITENED 0x0001
+#define LE_SIGNAL_POWER 0x0002
+#define LE_NOISE_POWER 0x0004
 
 #if !defined( DLT_BLUETOOTH_LE_LL_WITH_PHDR )
 #define DLT_BLUETOOTH_LE_LL_WITH_PHDR 256
@@ -74,7 +76,9 @@ void pcap_close(pcap_t *p) {
 void pcap_write_ble(pcap_t *p, ble_packet_t *b) {
     pcap_le_header_t le_header = {
         .rf_channel = (b->freq - 2402) / 2,
-        .flags = LE_DEWHITENED,
+        .signal_power = (int8_t)(b->rssi * 10.0f), // convert to dBm
+        .noise_power = 0, // TODO: noise power
+        .flags = LE_DEWHITENED | LE_SIGNAL_POWER | LE_NOISE_POWER,
     };
     pcaprec_hdr_t pcap_header = {
         .ts_sec   = b->timestamp.tv_sec,

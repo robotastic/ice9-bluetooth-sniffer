@@ -37,7 +37,7 @@ static unsigned freq_to_channel(unsigned freq) {
     return phys_channel - 2;
 }
 
-ble_packet_t *ble_burst(uint8_t *bits, unsigned bits_len, unsigned freq, struct timespec timestamp) {
+ble_packet_t *ble_burst(uint8_t *bits, unsigned bits_len, unsigned freq, float rssi, struct timespec timestamp) {
     unsigned i, j;
     // unsigned burst_len = (unsigned)roundf((float)bits_len / 8.0f);
     unsigned smallest_delta = 0xffffffff;
@@ -74,9 +74,10 @@ ble_packet_t *ble_burst(uint8_t *bits, unsigned bits_len, unsigned freq, struct 
         // see if any of the candidates have a length that makes sense
         if (smallest_delta < 20) {
 #define MAX(X,Y) ((X) > (Y) ? (X) : (Y))
-            ble_packet_t *p = malloc(sizeof(*p) + MAX(4 + 2 + smallest_header_len + 3, 64)); // FIXME bug in libbtbb
+            ble_packet_t *p = malloc(sizeof(*p) + MAX(4 + 2 + smallest_header_len + 3 + 4, 68)); // FIXME bug in libbtbb
             p->aa = smallest_aa;
             p->freq = freq;
+            p->rssi = rssi;
             p->len = 4 + 2 + smallest_header_len + 3;
             unsigned wh = whitening_index[channel];
             p->data[0] = (smallest_aa >>  0) & 0xff;
@@ -98,12 +99,12 @@ ble_packet_t *ble_burst(uint8_t *bits, unsigned bits_len, unsigned freq, struct 
     return NULL;
 }
 
-void bluetooth_detect(uint8_t *bits, unsigned len, unsigned freq, struct timespec timestamp, uint32_t *lap_out, uint32_t *aa_out) {
+void bluetooth_detect(uint8_t *bits, unsigned len, unsigned freq, float rssi, struct timespec timestamp, uint32_t *lap_out, uint32_t *aa_out) {
     uint32_t lap = btbb_find_ac((char *)bits, len, 1);
     if (lap != 0xffffffff) {
         *lap_out = lap;
     } else {
-        ble_packet_t * p = ble_burst(bits, len, freq, timestamp);
+        ble_packet_t * p = ble_burst(bits, len, freq, rssi, timestamp);
         if (p != NULL) {
             *aa_out = p->aa;
             if (pcap)

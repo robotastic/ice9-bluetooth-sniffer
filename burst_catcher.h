@@ -12,6 +12,7 @@
 // burst processing, one per channel
 typedef struct _burst_catcher_t {
     unsigned freq;
+    float rssi; // received signal strength indicator
     agc_crcf agc;
     float complex *burst;
     unsigned burst_len;
@@ -24,6 +25,7 @@ typedef struct _burst_t {
     float complex *burst;
     unsigned len;
     unsigned freq;
+    float rssi; // received signal strength indicator
     packet_t packet;
     unsigned num;
     struct timespec timestamp;
